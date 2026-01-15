@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>六爻铜钱占卜 - DeepSeek AI解卦版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "SimSun", "宋体", serif;
+        }
+        body {
+            background-image: url('https://picsum.photos/id/3/1920/1080'), linear-gradient(rgba(255,248,230,0.9), rgba(255,248,230,0.9));
+            background-blend-mode: overlay;
+            background-size: cover;
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://picsum.photos/id/175/200/200');
+            background-repeat: repeat;
+            background-size: 100px;
+            opacity: 0.05;
+            z-index: -1;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 30px auto;
+            justify-content: center;
+        }
+        .left-panel {
+            flex: 1;
+            max-width: 600px;
+            min-width: 400px;
+        }
+        .right-panel {
+            flex: 1;
+            max-width: 600px;
+            min-width: 400px;
+        }
+        .container {
+            background: rgba(255,252,245,0.95);
+            border: 2px solid #8b4513;
+            box-shadow: 0 0 20px rgba(139,69,19,0.2);
+            padding: 30px;
+            position: relative;
+            border-radius: 8px;
+            height: 100%;
+        }
+        .container::before, .container::after, .container .corner1, .container .corner2 {
+            content: "";
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid #8b4513;
+            z-index: 1;
+        }
+        .container::before {
+            top: -2px;
+            left: -2px;
+            border-right: none;
+            border-bottom: none;
+        }
+        .container::after {
+            top: -2px;
+            right: -2px;
+            border-left: none;
+            border-bottom: none;
+        }
+        .container .corner1 {
+            bottom: -2px;
+            left: -2px;
+            border-right: none;
+            border-top: none;
+        }
+        .container .corner2 {
+            bottom: -2px;
+            right: -2px;
+            border-left: none;
+            border-top: none;
+        }
+        h1 {
+            text-align: center;
+            color: #8b4513;
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        .subtitle {
+            text-align: center;
+            color: #6b4226;
+            font-size: 16px;
+            margin-bottom: 25px;
+            font-style: italic;
+        }
+        .question-input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #d2b48c;
+            border-radius: 4px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            resize: none;
+            outline: none;
+            background: rgba(255,250,240,0.8);
+            transition: all 0.3s;
+            font-family: "SimSun", serif;
+        }
+        .question-input:focus {
+            border-color: #8b4513;
+            box-shadow: 0 0 8px rgba(139,69,19,0.15);
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            color: #fff8dc;
+            border: none;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 8px rgba(139,69,19,0.2);
+        }
+        .btn:disabled {
+            background: linear-gradient(135deg, #d2b48c, #e6c8a0);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #a0522d, #b8860b);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(139,69,19,0.3);
+        }
+        
+        /* 新增等待提示样式 */
+        .waiting-message {
+            text-align: center;
+            color: #8b4513;
+            font-size: 16px;
+            padding: 18px;
+            margin: 15px 0;
+            background: rgba(255,245,238,0.8);
+            border-radius: 4px;
+            border: 1px solid #d2b48c;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
+        }
+        
+        .coins-container {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+            margin: 30px 0;
+            perspective: 1500px;
+        }
+        .coin-wrapper {
+            width: 80px;
+            height: 80px;
+            perspective: 1000px;
+        }
+        .coin {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2), inset 0 0 10px rgba(0,0,0,0.1);
+            border: 2px solid #b8860b;
+            transition: transform 1s ease-in-out;
+        }
+        .coin-front, .coin-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            backface-visibility: hidden;
+            overflow: hidden;
+        }
+        .coin-front::before, .coin-back::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 22px;
+            height: 22px;
+            background: #fff8dc;
+            border: 1px solid #8b4513;
+            border-radius: 2px;
+            z-index: 1;
+        }
+        .coin-front {
+            background: linear-gradient(135deg, #d4af37, #b8860b);
+            background-image: 
+                url('https://picsum.photos/id/201/200/200'),
+                radial-gradient(circle at center, transparent 22%, rgba(139,69,19,0.1) 23%, rgba(139,69,19,0.1) 27%, transparent 28%),
+                radial-gradient(circle at center, transparent 40%, rgba(139,69,19,0.08) 41%, rgba(139,69,19,0.08) 45%, transparent 46%);
+            background-blend-mode: overlay, normal, normal;
+            background-size: cover, 100% 100%, 100% 100%;
+        }
+        .coin-back {
+            background: linear-gradient(135deg, #b8860b, #8b5a2b);
+            background-image: 
+                url('https://picsum.photos/id/174/200/200'),
+                radial-gradient(circle at center, transparent 22%, rgba(139,69,19,0.15) 23%, rgba(139,69,19,0.15) 27%, transparent 28%),
+                repeating-radial-gradient(circle at center, transparent 40%, rgba(139,69,19,0.1) 41%, rgba(139,69,19,0.1) 42%, transparent 43%);
+            background-blend-mode: overlay, normal, normal;
+            background-size: cover, 100% 100%, 100% 100%;
+            transform: rotateY(180deg);
+        }
+        .lines-container {
+            margin: 25px 0;
+            padding: 15px;
+            background: rgba(255,245,238,0.6);
+            border-radius: 4px;
+            border-left: 3px solid #8b4513;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .line {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin: 12px 0;
+            font-size: 18px;
+            color: #6b4226;
+            white-space: nowrap;
+        }
+        .line strong {
+            width: 100px;
+            text-align: right;
+            margin-right: 15px;
+        }
+        .line span {
+            padding: 6px 20px;
+            border-radius: 4px;
+            background: rgba(255,250,240,0.8);
+            border: 1px solid #d2b48c;
+            flex: 0 0 auto;
+        }
+        .yang {
+            color: #2d5f2d;
+            border-color: #2d5f2d !important;
+        }
+        .yin {
+            color: #7d26cd;
+            border-color: #7d26cd !important;
+        }
+        .old-yang {
+            color: #1a5276;
+            border-color: #1a5276 !important;
+            font-weight: bold;
+            background: rgba(231,245,255,0.6) !important;
+        }
+        .old-yin {
+            color: #c0392b;
+            border-color: #c0392b !important;
+            font-weight: bold;
+            background: rgba(255,231,231,0.6) !important;
+        }
+        .result-container {
+            margin-top: 25px;
+            padding: 25px;
+            background: rgba(255,245,238,0.8);
+            border-radius: 4px;
+            border: 1px solid #d2b48c;
+            box-shadow: 0 4px 8px rgba(139,69,19,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .result-title {
+            font-size: 22px;
+            color: #8b4513;
+            margin-bottom: 15px;
+            font-weight: bold;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #d2b48c;
+        }
+        .result-content {
+            font-size: 16px;
+            color: #5c3c1e;
+            line-height: 1.8;
+            text-indent: 2em;
+        }
+        .ai-container {
+            margin-top: 25px;
+            padding: 25px;
+            background: rgba(245,240,230,0.9);
+            border-radius: 4px;
+            border: 1px solid #8b4513;
+            box-shadow: 0 4px 8px rgba(139,69,19,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .ai-loading {
+            text-align: center;
+            color: #8b4513;
+            font-size: 16px;
+            padding: 20px;
+        }
+        .ai-result {
+            font-size: 16px;
+            color: #5c3c1e;
+            line-height: 1.8;
+            text-indent: 2em;
+            padding: 10px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #8b4513;
+            font-size: 14px;
+            opacity: 0.8;
+            grid-column: 1 / -1;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .left-panel, .right-panel {
+                max-width: 800px;
+                width: 100%;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .left-panel, .right-panel {
+                min-width: 300px;
+            }
+            .coins-container {
+                gap: 15px;
+            }
+            .coin-wrapper {
+                width: 70px;
+                height: 70px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- 左边面板：输入和卦象生成 -->
+        <div class="left-panel">
+            <div class="container">
+                <div class="corner1"></div>
+                <div class="corner2"></div>
+                
+                <h1>六爻铜钱占卜</h1>
+                <p class="subtitle">心诚则灵，默念所求之事，掷币问卜</p>
+                
+                <textarea class="question-input" placeholder="请输入你想占卜的方向（如事业、感情、财运、学业）" rows="3"></textarea>
+                
+                <button class="btn" id="divineBtn">开始起卦</button>
+                
+                <!-- 新增等待提示容器 -->
+                <div class="waiting-message hidden" id="waitingMessage">
+                    硬币转动中，六爻生成需要时间，请耐心等待...
+                </div>
+                
+                <div class="coins-container">
+                    <div class="coin-wrapper">
+                        <div class="coin" id="coin1">
+                            <div class="coin-front"></div>
+                            <div class="coin-back"></div>
+                        </div>
+                    </div>
+                    <div class="coin-wrapper">
+                        <div class="coin" id="coin2">
+                            <div class="coin-front"></div>
+                            <div class="coin-back"></div>
+                        </div>
+                    </div>
+                    <div class="coin-wrapper">
+                        <div class="coin" id="coin3">
+                            <div class="coin-front"></div>
+                            <div class="coin-back"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="lines-container hidden" id="linesContainer">
+                    <div class="result-title">卦象（从上往下排列）</div>
+                </div>
+                
+                <!-- 卦象解读部分已移到右边 -->
+            </div>
+        </div>
+        
+        <!-- 右边面板：卦象解读和AI解卦 -->
+        <div class="right-panel">
+            <div class="container">
+                <div class="corner1"></div>
+                <div class="corner2"></div>
+                
+                <h1>卦象解读</h1>
+                <p class="subtitle">传统卦象解析与现代AI解卦</p>
+                
+                <!-- 卦象解读区域 -->
+                <div class="result-container hidden" id="resultContainer">
+                    <div class="result-title" id="hexagramName"></div>
+                    <div class="result-content" id="hexagramInterpretation"></div>
+                </div>
+                
+                <!-- AI解卦区域 -->
+                <div class="ai-container hidden" id="aiContainer">
+                    <div class="result-title">DeepSeek AI智能解卦</div>
+                    <div id="aiResult" class="ai-loading">请先完成占卜，AI将为您解读卦象...</div>
+                </div>
+                
+                <!-- 占卜结果未生成时的提示 -->
+                <div class="ai-container" id="initialPrompt">
+                    <div class="result-title">占卜结果</div>
+                    <div class="result-content">
+                        <p>请在左侧输入占卜问题并点击"开始起卦"按钮，硬币转动生成六爻后，卦象解读和AI解卦结果将显示在此处。</p>
+                        <p>传统卦象解读将显示在上方，AI智能解卦显示在下方，为您提供双重参考。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        易有太极，是生两仪，两仪生四象，四象生八卦，八卦定吉凶，吉凶生大业
+    </div>
+
+    <script>
+        // **************************
+        // 在这里填写你的DeepSeek API Key
+        const DEEPSEEK_API_KEY = "sk-68c5702558094e4e972e1df1b08f355a"; 
+        // DeepSeek API接口地址（官方默认）
+        const DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions";
+        // **************************
+
+        const hexagrams = {
+            "000000": { name: "坤为地", interpretation: "坤卦：元亨，利牝马之贞。君子有攸往，先迷后得主，利西南得朋，东北丧朋。安贞吉。解读：坤为顺，代表大地、包容、承载。问事主顺境、积累、等待，宜守成，不宜急进。感情主稳定长久，事业主稳步发展，财运主循序渐进，学业主扎实积累。" },
+            "000001": { name: "地雷复", interpretation: "复卦：亨。出入无疾，朋来无咎。反复其道，七日来复，利有攸往。解读：复为复苏，代表回归、重启。问事主转机出现，过去的问题将逐步改善，宜抓住机会调整方向。感情主破镜重圆或旧人重逢，事业主重新起步，财运主触底反弹。" },
+            "000010": { name: "地泽临", interpretation: "临卦：元亨，利贞。至于八月有凶。解读：临为临近、管理。问事主机遇降临，宜主动出击把握当下。事业主掌权、晋升或接手重要任务，感情主主动追求可得良缘，财运主正财丰厚，学业主临近考试能超常发挥。" },
+            "000011": { name: "地天泰", interpretation: "泰卦：小往大来，吉亨。解读：泰为通泰，代表顺畅、和谐。问事主大吉之兆，万事顺遂无阻碍。感情和睦恩爱，事业通达无阻，财运亨通有余，学业事半功倍，是难得的吉卦，宜顺势而为扩大成果。" },
+            "000100": { name: "地风升", interpretation: "升卦：元亨，用见大人，勿恤，南征吉。解读：升为上升，代表发展、晋升。问事主步步高升，有贵人相助。事业主晋升加薪或拓展新领域，学业主成绩突飞猛进，财运主稳步增长，感情主关系升温。" },
+            "000101": { name: "地火明夷", interpretation: "明夷卦：利艰贞。解读：明夷为光明受损，代表困境、隐忍。问事主当前遇阻碍，宜低调隐忍，不可强行冒进，等待时机再行动。感情主暂时压抑需耐心经营，事业主需克服困难坚守本心，财运主谨慎投资避免损失。" },
+            "000110": { name: "地水师", interpretation: "师卦：贞，丈人吉，无咎。解读：师为军队，代表战争、团队。问事主需团结协作，或面临竞争冲突。事业主依靠团队力量成事，感情主需共同面对考验，财运主合作获利，学业主结伴学习效率更高。" },
+            "000111": { name: "地山谦", interpretation: "谦卦：亨，君子有终。解读：谦为谦逊，代表谦虚、低调。问事主大吉，待人谦和则贵人相助，做事低调则少遇阻碍。事业主因谦逊得赏识，感情主相互包容长久，财运主积少成多，学业主虚心求教进步快。" },
+            "001000": { name: "震为雷", interpretation: "震卦：亨。震来虩虩，笑言哑哑。震惊百里，不丧匕鬯。解读：震为动，代表雷声、震动。问事主突发变动，需灵活应对。事业主有突发机遇或挑战，感情主关系出现波动但无大碍，财运主意外之财，学业主突发灵感突破瓶颈。" },
+            "001001": { name: "震为雷（纯卦）", interpretation: "震卦：亨。震来虩虩，笑言哑哑。震惊百里，不丧匕鬯。解读：震为动，代表雷声、震动。问事主突发变动，需灵活应对。事业主有突发机遇或挑战，感情主关系出现波动但无大碍，财运主意外之财，学业主突发灵感突破瓶颈。" },
+            "001010": { name: "雷泽归妹", interpretation: "归妹卦：征凶，无攸利。解读：归妹为婚嫁，代表归宿、结合。问事主感情需谨慎，盲目追求易有凶。事业主合作需考察对方，财运主投资婚嫁相关事宜需理性，学业主专注自身避免受他人影响。" },
+            "001011": { name: "雷天大壮", interpretation: "大壮卦：利贞。解读：大壮为壮大，代表强盛、进取。问事主运势强盛，宜把握时机进取。事业主规模扩大或竞争力提升，感情主关系稳固升温，财运主正财偏财皆旺，学业主实力大增。" },
+            "001100": { name: "雷风恒", interpretation: "恒卦：亨，无咎，利贞，利有攸往。解读：恒为恒久，代表持久、稳定。问事主需坚守本心，持之以恒。感情主长久稳定可步入婚姻，事业主长期坚持必有所成，财运主细水长流，学业主持续努力终获成功。" },
+            "001101": { name: "雷火丰", interpretation: "丰卦：亨，王假之，勿忧，宜日中。解读：丰为丰盛，代表繁荣、圆满。问事主运势鼎盛，成果丰硕。事业主业绩斐然，感情主收获美满爱情，财运主财源广进，学业主取得优异成绩，宜在巅峰时保持清醒。" },
+            "001110": { name: "雷山小过", interpretation: "小过卦：亨，利贞，可小事，不可大事。飞鸟遗之音，不宜上，宜下，大吉。解读：小过为小的过度，代表谨慎、适度。问事主宜做小事不宜办大事，凡事留有余地。事业主稳步推进不冒进，感情主适度付出避免纠缠，财运主小额投资稳健获利。" },
+            "001111": { name: "雷水解", interpretation: "解卦：利西南，无所往，其来复吉。有攸往，夙吉。解读：解为解除，代表化解、脱困。问事主困境将解，难题迎刃而解。事业主摆脱阻碍，感情主化解矛盾重归于好，财运主摆脱债务或亏损，学业主攻克难点。" },
+            "010000": { name: "兑为泽", interpretation: "兑卦：亨，利贞。解读：兑为悦，代表喜悦、沟通。问事主人际关系顺畅，易得他人相助。事业主通过沟通合作成事，感情主甜蜜和睦，财运主贵人相助获利，学业主交流学习提升快，宜积极社交。" },
+            "010001": { name: "泽雷随", interpretation: "随卦：元亨，利贞，无咎。解读：随为跟随，代表顺应、随从。问事主宜顺势而为，跟随大势或贵人。事业主跟随团队或贵人能获成功，感情主随缘发展不勉强，财运主顺势投资获利，学业主跟随优秀者脚步进步。" },
+            "010010": { name: "泽泽兑（纯卦）", interpretation: "兑卦：亨，利贞。解读：兑为悦，代表喜悦、沟通。问事主人际关系顺畅，易得他人相助。事业主通过沟通合作成事，感情主甜蜜和睦，财运主贵人相助获利，学业主交流学习提升快，宜积极社交。" },
+            "010011": { name: "泽天夬", interpretation: "夬卦：扬于王庭，孚号，有厉，告自邑，不利即戎，利有攸往。解读：夬为决断，代表果断、清除。问事主需果断决策，清除阻碍。事业主果断放弃不利项目或合作伙伴，感情主果断结束不合适关系，财运主清理债务或不良投资，学业主果断调整学习方法。" },
+            "010100": { name: "泽风大过", interpretation: "大过卦：栋桡，利有攸往，亨。解读：大过为太过，代表过度、危机。问事主当前局面超出常规，需谨慎应对。事业主避免过度扩张，感情主避免过度投入，财运主避免大额投资，学业主避免过度劳累需劳逸结合。" },
+            "010101": { name: "泽火革", interpretation: "革卦：己日乃孚，元亨，利贞，悔亡。解读：革为变革，代表改革、革新。问事主需破旧立新，改变现状。事业主改革制度或经营模式，感情主改变相处方式重燃激情，财运主更换投资方向获利，学业主改变学习方法提升效率。" },
+            "010110": { name: "泽山咸", interpretation: "咸卦：亨，利贞，取女吉。解读：咸为感应，代表缘分、感应。问事主感情运势佳，易遇良缘。感情主两情相悦，事业主与他人合作有默契，财运主因人际关系获利，学业主心有灵犀领悟快。" },
+            "010111": { name: "泽水困", interpretation: "困卦：亨，贞，大人吉，无咎，有言不信。解读：困为困境，代表困顿、束缚。问事主当前陷入困境，宜坚守本心。事业主暂时受阻需等待时机，感情主出现矛盾需冷静沟通，财运主暂时拮据，学业主遇到瓶颈需耐心钻研。" },
+            "011000": { name: "乾为天", interpretation: "乾卦：元亨利贞。解读：乾为健，代表天、刚健、进取。问事主大吉之兆，运势旺盛。事业主步步高升、大展宏图，感情主主动追求可得良缘，财运主正财偏财皆旺，学业主名列前茅，宜积极进取。" },
+            "011001": { name: "天风姤", interpretation: "姤卦：女壮，勿用取女。解读：姤为相遇，代表邂逅、机缘。问事主易遇新的人和事，需谨慎选择。事业主遇到新的合作机会或贵人，感情主邂逅良缘但需考察，财运主有新的投资机遇，学业主接触新的知识领域。" },
+            "011010": { name: "天山遁", interpretation: "遁卦：亨，小利贞。解读：遁为退避，代表隐退、避让。问事主当前宜退不宜进，避开锋芒。事业主暂时隐退积蓄力量，感情主适当保持距离增进美感，财运主保守投资避免风险，学业主暂时调整节奏。" },
+            "011011": { name: "天地否", interpretation: "否卦：否之匪人，不利君子贞，大往小来。解读：否为闭塞，代表不顺、阻碍。问事主运势低迷，诸事不顺。事业主阻碍重重，感情主沟通不畅易有矛盾，财运主入不敷出，学业主进步缓慢，宜低调隐忍等待转机。" },
+            "011100": { name: "天泽履", interpretation: "履卦：履虎尾，不咥人，亨。解读：履为履行，代表谨慎、实践。问事主需谨慎行事，脚踏实地。事业主稳步推进避免冒险，感情主谨慎经营避免冲突，财运主稳健投资，学业主踏实学习不浮躁。" },
+            "011101": { name: "天火同人", interpretation: "同人卦：同人于野，亨，利涉大川，利君子贞。解读：同人为同心，代表团结、合作。问事主宜与人合作，众志成城。事业主团队合作获成功，感情主同心同德，财运主合作获利，学业主结伴学习效率高。" },
+            "011110": { name: "天雷无妄", interpretation: "无妄卦：元亨，利贞。其匪正有眚，不利有攸往。解读：无妄为无妄之灾，代表真诚、不妄为。问事主需真诚待人，不做虚妄之事。事业主脚踏实地获成功，感情主真诚相待长久，财运主正当获利，学业主真实水平发挥，避免投机取巧。" },
+            "011111": { name: "天水讼", interpretation: "讼卦：有孚窒惕，中吉，终凶。利见大人，不利涉大川。解读：讼为诉讼，代表争端、纠纷。问事主易遇矛盾纠纷，宜和解不宜争斗。事业主避免与人争执，感情主出现矛盾需及时沟通，财运主避免投资纠纷，学业主避免抄袭等风险。" },
+            "100000": { name: "巽为风", interpretation: "巽卦：小亨，利有攸往，利见大人。解读：巽为顺，代表风、谦逊、顺从。问事主宜灵活应变，谦逊待人。事业主灵活变通获成功，感情主相互包容，财运主顺势而为获利，学业主灵活学习举一反三。" },
+            "100001": { name: "风雷益", interpretation: "益卦：利有攸往，利涉大川。解读：益为增益，代表受益、帮助。问事主运势上升，易得他人帮助。事业主得到贵人相助，感情主相互扶持，财运主获利丰厚，学业主得到老师同学帮助进步快。" },
+            "100010": { name: "风泽中孚", interpretation: "中孚卦：豚鱼吉，利涉大川，利贞。解读：中孚为诚信，代表诚信、信任。问事主需诚信待人，可得福报。事业主因诚信获认可，感情主坦诚相待长久，财运主诚信经营获利，学业主踏实学习获好成绩。" },
+            "100011": { name: "风天小畜", interpretation: "小畜卦：亨。密云不雨，自我西郊。解读：小畜为积蓄，代表小的积蓄、准备。问事主需积累力量，等待时机。事业主积累经验和资源，感情主慢慢培养，财运主小额积累，学业主逐步提升。" },
+            "100100": { name: "巽为风（纯卦）", interpretation: "巽卦：小亨，利有攸往，利见大人。解读：巽为顺，代表风、谦逊、顺从。问事主宜灵活应变，谦逊待人。事业主灵活变通获成功，感情主相互包容，财运主顺势而为获利，学业主灵活学习举一反三。" },
+            "100101": { name: "风火家人", interpretation: "家人卦：利女贞。解读：家人为家庭，代表家庭、和睦。问事主家庭运势佳，宜注重家庭。事业主家庭支持助力成功，感情主家庭认可，财运主家庭理财顺利，学业主家人鼓励进步快。" },
+            "100110": { name: "风山渐", interpretation: "渐卦：女归吉，利贞。解读：渐为渐进，代表循序渐进、发展。问事主需循序渐进，不可急于求成。事业主稳步发展，感情主慢慢升温步入婚姻，财运主逐步增长，学业主循序渐进提升。" },
+            "100111": { name: "风水涣", interpretation: "涣卦：亨，王假有庙，利涉大川，利贞。解读：涣为涣散，代表分散、化解。问事主当前局面涣散，需凝聚力量。事业主团结团队，感情主化解矛盾，财运主分散投资降低风险，学业主整合知识体系。" },
+            "101000": { name: "离为火", interpretation: "离卦：利贞，亨。畜牝牛，吉。解读：离为明，代表火、光明、热情。问事主运势光明，充满活力。事业主光明磊落获成功，感情主热情似火，财运主红红火火，学业主思路清晰，宜积极展现自我。" },
+            "101001": { name: "火雷噬嗑", interpretation: "噬嗑卦：亨。利用狱。解读：噬嗑为咬合，代表解决、突破。问事主需主动解决问题，突破阻碍。事业主攻克难关，感情主解决矛盾增进感情，财运主解决财务问题获利，学业主攻克难点。" },
+            "101010": { name: "火泽睽", interpretation: "睽卦：小事吉。解读：睽为背离，代表分歧、差异。问事主当前存在分歧，宜求同存异。事业主尊重差异合作共赢，感情主相互理解包容，财运主差异化竞争获利，学业主不同方法尝试。" },
+            "101011": { name: "火天大有", interpretation: "大有卦：元亨。解读：大为丰盛，代表富足、圆满。问事主大吉之兆，收获丰厚。事业主功成名就，感情主收获美满爱情，财运主财源滚滚，学业主硕果累累，宜把握时机扩大成果。" },
+            "101100": { name: "火风鼎", interpretation: "鼎卦：元吉，亨。解读：鼎为鼎新，代表变革、鼎盛。问事主运势鼎盛，宜破旧立新。事业主改革创新获成功，感情主关系升级，财运主投资新项目获利，学业主创新学习方法。" },
+            "101101": { name: "离为火（纯卦）", interpretation: "离卦：利贞，亨。畜牝牛，吉。解读：离为明，代表火、光明、热情。问事主运势光明，充满活力。事业主光明磊落获成功，感情主热情似火，财运主红红火火，学业主思路清晰，宜积极展现自我。" },
+            "101110": { name: "火山旅", interpretation: "旅卦：小亨，旅贞吉。解读：旅为旅行，代表漂泊、暂居。问事主当前不稳定，宜随遇而安。事业主暂时变动或出差，感情主暂时分离或异地恋，财运主异地投资获利，学业主外出学习或转学。" },
+            "101111": { name: "火水未济", interpretation: "未济卦：亨，小狐汔济，濡其尾，无攸利。解读：未济为未完成，代表未竟、待续。问事主事情尚未完成，需继续努力。事业主仍需奋斗，感情主关系尚未稳定，财运主仍需积累，学业主仍需努力，宜坚持不懈。" },
+            "110000": { name: "艮为山", interpretation: "艮卦：艮其背，不获其身，行其庭，不见其人，无咎。解读：艮为止，代表停止、坚守。问事主宜停止前进，坚守现状。事业主暂时停止扩张，感情主保持现状，财运主保守投资，学业主巩固已学知识，避免盲目进取。" },
+            "110001": { name: "山雷颐", interpretation: "颐卦：贞吉。观颐，自求口实。解读：颐为颐养，代表休养、积累。问事主宜休养身心，积累力量。事业主休养生息，感情主培养感情，财运主积累财富，学业主巩固基础，宜厚积薄发。" },
+            "110010": { name: "山泽损", interpretation: "损卦：有孚，元吉，无咎，可贞，利有攸往。曷之用？二簋可用享。解读：损为损益，代表损失、减损。问事主需有所舍弃，才能有所得。事业主放弃不利项目，感情主适当让步，财运主舍小利获大利，学业主放弃无效学习方法。" },
+            "110011": { name: "山天大畜", interpretation: "大畜卦：利贞，不家食吉，利涉大川。解读：大畜为大的积蓄，代表积累、储备。问事主运势旺盛，积累丰厚。事业主积累经验和资源，感情主长久稳定，财运主积蓄丰厚，学业主知识储备充足，宜把握时机大展拳脚。" },
+            "110100": { name: "山风蛊", interpretation: "蛊卦：元亨，利涉大川。先甲三日，后甲三日。解读：蛊为蛊惑，代表整治、革新。问事主当前局面混乱，需整治革新。事业主整顿内部，感情主解决感情问题，财运主清理不良资产，学业主调整学习状态。" },
+            "110101": { name: "山火贲", interpretation: "贲卦：亨，小利有攸往。解读：贲为装饰，代表修饰、美化。问事主宜注重外在形象，提升自身魅力。事业主注重品牌形象，感情主注重相处氛围，财运主通过美化产品获利，学业主注重卷面整洁。" },
+            "110110": { name: "艮为山（纯卦）", interpretation: "艮卦：艮其背，不获其身，行其庭，不见其人，无咎。解读：艮为止，代表停止、坚守。问事主宜停止前进，坚守现状。事业主暂时停止扩张，感情主保持现状，财运主保守投资，学业主巩固已学知识，避免盲目进取。" },
+            "110111": { name: "山水蒙", interpretation: "蒙卦：亨。匪我求童蒙，童蒙求我。初筮告，再三渎，渎则不告。利贞。解读：蒙为蒙昧，代表启蒙、学习。问事主处于学习阶段，宜虚心求教。事业主学习新知识技能，感情主学习经营感情，财运主学习理财知识，学业主努力学习新知识。" },
+            "111000": { name: "坎为水", interpretation: "坎卦：习坎，有孚，维心亨，行有尚。解读：坎为险，代表险阻、困难。问事主运势坎坷，需克服困难。事业主阻碍重重，感情主历经考验，财运主起伏不定，学业主遇到挑战，宜坚定信念，勇往直前。" },
+            "111001": { name: "水雷屯", interpretation: "屯卦：元亨，利贞。勿用有攸往，利建侯。解读：屯为屯积，代表初始、困难。问事主事情刚起步，困难重重。事业主创业初期需谨慎，感情主刚确立关系需经营，财运主初始积累，学业主刚开始学习需耐心，宜循序渐进。" },
+            "111010": { name: "水泽节", interpretation: "节卦：亨。苦节不可贞。解读：节为节制，代表节制、适度。问事主需适度节制，不可过度。事业主适度扩张，感情主适度付出，财运主适度消费，学业主适度学习，避免过度劳累或放纵。" },
+            "111011": { name: "水天需", interpretation: "需卦：有孚，光亨，贞吉。利涉大川。解读：需为等待，代表等待、需求。问事主需耐心等待，不可急躁。事业主等待机遇，感情主等待良缘，财运主等待投资时机，学业主等待合适的学习机会，宜静待时机。" },
+            "111100": { name: "水风井", interpretation: "井卦：改邑不改井，无丧无得，往来井井。汔至，亦未繘井，羸其瓶，凶。解读：井为井养，代表滋养、稳定。问事主宜保持稳定，滋养身心。事业主稳定发展，感情主稳定长久，财运主稳定收入，学业主稳定进步，宜坚守本心。" },
+            "111101": { name: "水火既济", interpretation: "既济卦：亨，小利贞。初吉终乱。解读：既济为完成，代表完成、成功。问事主事情已完成，但需防后患。事业主已获成功但需保持，感情主关系稳定但需经营，财运主已获财富但需理财，学业主已获成绩但需巩固，宜居安思危。" },
+            "111110": { name: "水山蹇", interpretation: "蹇卦：利西南，不利东北。利见大人，贞吉。解读：蹇为蹇难，代表艰难、阻碍。问事主当前困难重重，需贵人相助。事业主需贵人扶持，感情主需他人撮合，财运主需贵人指点，学业主需老师帮助，宜主动寻求帮助。" },
+            "111111": { name: "坎为水（纯卦）", interpretation: "坎卦：习坎，有孚，维心亨，行有尚。解读：坎为险，代表险阻、困难。问事主运势坎坷，需克服困难。事业主阻碍重重，感情主历经考验，财运主起伏不定，学业主遇到挑战，宜坚定信念，勇往直前。" }
+        };
+
+        const questionInput = document.querySelector(".question-input");
+        const divineBtn = document.getElementById("divineBtn");
+        const waitingMessage = document.getElementById("waitingMessage");
+        const linesContainer = document.getElementById("linesContainer");
+        const resultContainer = document.getElementById("resultContainer");
+        const hexagramName = document.getElementById("hexagramName");
+        const hexagramInterpretation = document.getElementById("hexagramInterpretation");
+        const aiContainer = document.getElementById("aiContainer");
+        const aiResult = document.getElementById("aiResult");
+        const initialPrompt = document.getElementById("initialPrompt");
+
+        // 禁用空输入
+        divineBtn.disabled = questionInput.value.trim() === '';
+        questionInput.addEventListener("input", () => {
+            divineBtn.disabled = questionInput.value.trim() === '';
+        });
+
+        // 爻位类型判断
+        const getLineType = (coins) => {
+            const count = coins.filter(c => c === 1).length;
+            if (count === 0) return { type: "old-yin", code: "0", text: "老阴（变阳）" };
+            if (count === 1) return { type: "yin", code: "0", text: "少阴" };
+            if (count === 2) return { type: "yang", code: "1", text: "少阳" };
+            if (count === 3) return { type: "old-yang", code: "1", text: "老阳（变阴）" };
+        };
+
+        // 硬币翻转随机值
+        const flipCoin = () => {
+            const standProb = 0.00001;
+            if (Math.random() < standProb) return flipCoin();
+            return Math.random() > 0.5 ? 1 : 0;
+        };
+
+        // 硬币最终旋转角度
+        const getFinalRotation = (isYang) => {
+            const baseAngle = isYang ? 0 : 180;
+            const randomCycles = Math.floor(Math.random()*3)+4;
+            return baseAngle + (randomCycles * 360);
+        };
+
+        // 提取问题关键词
+        const extractKeywords = (question) => {
+            const keywords = [];
+            if (question.includes('事业')) keywords.push('事业');
+            if (question.includes('感情')) keywords.push('感情');
+            if (question.includes('财运')) keywords.push('财运');
+            if (question.includes('学业')) keywords.push('学业');
+            if (question.includes('健康')) keywords.push('健康');
+            if (question.includes('问事')) keywords.push('问事');
+            return keywords.length > 0 ? keywords : ['问事'];
+        };
+
+        // 调用DeepSeek API进行AI解卦
+        const callDeepSeekAPI = async (question, hexagramInfo) => {
+            if (!DEEPSEEK_API_KEY) {
+                return "请先在代码中填写你的DeepSeek API Key！";
+            }
+
+            try {
+                // 提取关键词
+                const keywords = extractKeywords(question);
+                const keywordText = keywords.join('、');
+
+                // 构建简洁版提示词
+                const prompt = `
+                你是易经六爻占卜的通俗解读师，用大白话给用户解卦，要求：
+                1. 针对用户问的【${keywordText}】结合${hexagramInfo.name}卦象做解读
+                2. 内容分3点：现状、趋势、建议，每点一句话说清楚，不超过50字
+                3. 不用专业术语，像和朋友聊天一样简单直白，整体不超过200字
+                4. 语气亲切，建议具体可行
+                
+                用户问题：${question}
+                卦象核心：${hexagramInfo.interpretation.split('。解读：')[1] || hexagramInfo.interpretation}
+                `;
+
+                // 调用DeepSeek API（兼容OpenAI格式）
+                const response = await fetch(DEEPSEEK_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        model: "deepseek-chat", // DeepSeek默认模型
+                        messages: [
+                            { role: "system", content: "你是通俗的易经解卦师，只用大白话简单解读，内容简短精炼，不啰嗦" },
+                            { role: "user", content: prompt }
+                        ],
+                        temperature: 0.7,
+                        max_tokens: 300, // 限制生成字数
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API请求失败：${response.status} - ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                if (data.choices && data.choices.length > 0) {
+                    return data.choices[0].message.content;
+                } else {
+                    return "未能获取AI解卦结果，API返回数据异常，请重试";
+                }
+            } catch (error) {
+                console.error("DeepSeek API调用错误：", error);
+                return `AI解卦失败：${error.message}，请检查API Key是否正确或网络连接`;
+            }
+        };
+
+        // 起卦按钮点击事件
+        divineBtn.addEventListener("click", async () => {
+            divineBtn.disabled = true;
+            divineBtn.textContent = "起卦中...";
+            
+            // 隐藏所有结果容器和初始提示
+            waitingMessage.classList.add("hidden");
+            linesContainer.classList.add("hidden");
+            resultContainer.classList.add("hidden");
+            aiContainer.classList.add("hidden");
+            initialPrompt.classList.add("hidden");
+            
+            // 显示等待提示
+            waitingMessage.classList.remove("hidden");
+            
+            aiResult.textContent = "正在为您解读卦象...";
+
+            const currentQuestion = questionInput.value.trim();
+            const hexagramCode = [];
+            const linesContainerEl = document.querySelector(".lines-container");
+            linesContainerEl.innerHTML = '<div class="result-title">卦象（从上往下排列）</div>';
+            const lineNames = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"];
+            const lineElements = [];
+            const coins = document.querySelectorAll(".coin");
+
+            // 模拟掷硬币生成卦象
+            for (let i = 0; i < 6; i++) {
+                // 重置硬币样式
+                coins.forEach(coin => {
+                    coin.style.transform = "rotateY(0deg)";
+                });
+                await new Promise(resolve => requestAnimationFrame(resolve));
+
+                // 生成硬币翻转结果
+                const flipResults = [flipCoin(), flipCoin(), flipCoin()];
+                const lineInfo = getLineType(flipResults);
+                hexagramCode.push(lineInfo.code);
+
+                // 硬币动画
+                coins.forEach((coin, idx) => {
+                    const finalRotation = getFinalRotation(flipResults[idx] === 1);
+                    coin.style.transform = `rotateY(${finalRotation}deg)`;
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // 渲染爻位
+                const lineEl = document.createElement("div");
+                lineEl.className = "line";
+                const coinText = flipResults.map(c => c === 1 ? "阳" : "阴").join("、");
+                lineEl.innerHTML = `
+                    <strong>${lineNames[i]}：</strong>
+                    <span class="${lineInfo.type}">${lineInfo.text}（${coinText}）</span>
+                `;
+                lineElements.push(lineEl);
+
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // 隐藏等待提示
+            waitingMessage.classList.add("hidden");
+            
+            // 倒序渲染爻位（符合六爻从上到下的顺序）
+            lineElements.reverse().forEach(el => linesContainerEl.appendChild(el));
+
+            // 获取卦象结果
+            const finalCode = hexagramCode.join("");
+            const currentHexagram = hexagrams[finalCode] || hexagrams["000000"];
+            hexagramName.textContent = `卦象：${currentHexagram.name}`;
+            hexagramInterpretation.textContent = currentHexagram.interpretation;
+
+            // 显示卦象结果（在右边面板）
+            linesContainer.classList.remove("hidden");
+            resultContainer.classList.remove("hidden");
+            aiContainer.classList.remove("hidden");
+
+            // 调用DeepSeek AI解卦
+            const aiInterpretation = await callDeepSeekAPI(currentQuestion, currentHexagram);
+            aiResult.className = "ai-result";
+            aiResult.innerHTML = aiInterpretation.replace(/\n/g, "<br>");
+
+            // 恢复按钮状态
+            divineBtn.disabled = false;
+            divineBtn.textContent = "重新起卦";
+        });
+    </script>
+</body>
+</html>
